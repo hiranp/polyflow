@@ -1,0 +1,7 @@
+.DS_Store
+
+# Local-only slot instructions (internal dev notes; never push to the public fork).
+CLAUDE.local.md
+
+# Generated eval run artifacts — scaffold output only, not source.
+evals/workspace/

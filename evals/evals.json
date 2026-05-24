@@ -1,0 +1,45 @@
+{
+  "skill_name": "polyflow",
+  "evals": [
+    {
+      "id": 1,
+      "name": "pipeline-review-and-verify",
+      "prompt": "Create a workflow that reviews branch changes across bugs/security/tests and adversarially verifies each finding.",
+      "expected_output": "A runnable workflow with valid meta block, pipeline topology, structured schemas for findings/verdicts, and safe null handling.",
+      "files": [],
+      "assertions": [
+        "Output contains an export const meta block as first statement",
+        "Workflow uses pipeline for multi-stage per-item flow",
+        "Each stage using structured data defines JSON schema",
+        "Code safely handles null or missing stage outputs",
+        "Final return includes confirmed findings summary"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "loop-with-budget-guard",
+      "prompt": "Create a loop workflow that keeps discovering issues until budget is low, with a hard cap to ensure termination.",
+      "expected_output": "A loop workflow with both budget guard and hard cap, plus progress logging and structured outputs.",
+      "files": [],
+      "assertions": [
+        "Loop includes a hard cap termination condition",
+        "Loop includes a budget-aware guard",
+        "Structured schema is used for collected items",
+        "Output reports rounds/count summary"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "portable-generalization-guidance",
+      "prompt": "Explain how to adapt this workflow for Claude Code, Codex, Copilot, and Gemini with a shared portable spec.",
+      "expected_output": "A clear architecture split (intent/adapters/runner), model mapping strategy, and deterministic artifact-based state transfer guidance.",
+      "files": [],
+      "assertions": [
+        "Response defines a portable canonical spec",
+        "Response includes per-platform adapter notes for all four runtimes",
+        "Response includes determinism and resume/replay guidance",
+        "Response includes token/time optimization considerations"
+      ]
+    }
+  ]
+}

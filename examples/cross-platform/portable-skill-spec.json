@@ -1,0 +1,56 @@
+{
+  "name": "portable-review-and-verify",
+  "version": "0.1.0",
+  "description": "Review code changes across dimensions, then verify each finding.",
+  "inputs": {
+    "target": "branch_or_diff",
+    "dimensions": ["bugs", "security", "tests"]
+  },
+  "topology": "pipeline",
+  "stages": [
+    {
+      "id": "review",
+      "parallelOver": "dimensions",
+      "modelClass": "balanced",
+      "promptTemplate": "Review {target} for {dimension}. Return findings.",
+      "outputSchema": {
+        "type": "object",
+        "required": ["findings"],
+        "properties": {
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["title", "file", "severity"],
+              "properties": {
+                "title": {"type": "string"},
+                "file": {"type": "string"},
+                "severity": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "verify",
+      "parallelOver": "findings",
+      "modelClass": "small-fast",
+      "promptTemplate": "Adversarially verify this finding: {finding}",
+      "outputSchema": {
+        "type": "object",
+        "required": ["isReal"],
+        "properties": {
+          "isReal": {"type": "boolean"},
+          "reason": {"type": "string"}
+        }
+      }
+    }
+  ],
+  "stopConditions": [
+    {"type": "maxRounds", "value": 1}
+  ],
+  "output": {
+    "required": ["confirmed"]
+  }
+}

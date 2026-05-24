@@ -1,0 +1,236 @@
+{
+  "portable_spec": "examples/cross-platform/portable-skill-spec.json",
+  "run_id": "",
+  "date": "",
+  "results": {
+    "claude": {},
+    "codex": {},
+    "copilot": {},
+    "gemini": {}
+  },
+  "checks": [
+    {
+      "id": "C01",
+      "title": "Required canonical inputs are accepted and parsed",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C02",
+      "title": "Stage sequence matches canonical definition",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C03",
+      "title": "Parallel stages preserve intended fan-out behavior",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C04",
+      "title": "Review stage output validates against findings schema",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C05",
+      "title": "Verify stage output validates against verdict schema",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C06",
+      "title": "Null/skip outputs do not crash orchestration",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C07",
+      "title": "Stop conditions terminate as expected",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C08",
+      "title": "Deterministic execution (no random/time branching)",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C09",
+      "title": "Model mapping follows semantic classes",
+      "critical": false,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C10",
+      "title": "Final output includes required canonical fields",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C11",
+      "title": "Artifacts are persisted for replay and audit",
+      "critical": false,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C12",
+      "title": "Retry/failure paths produce explicit error status",
+      "critical": false,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    }
+  ],
+  "summary": {
+    "critical_passed": 0,
+    "critical_total": 0,
+    "non_critical_failed": 0,
+    "conformant": null
+  },
+  "remediations": []
+}
