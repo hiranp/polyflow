@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.2.0] - 2026-05-29
+
+### Fixed
+- `scripts/estimate-cost.mjs`: Corrected double-counting of parallel/fan-out agents in `assumedCalls`.
+- `scripts/estimate-cost.mjs`: Resolved bug where map-based dynamic parallels were incorrectly classified as fixed-count due to parsing precedence.
 
 ### Added
 - `assets/examples/software-dev-pipeline.js`: full SDLC workflow with

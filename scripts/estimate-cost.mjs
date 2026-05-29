@@ -81,6 +81,10 @@ function formatModel(model) {
 }
 
 function parseParallelShape(call) {
+  if (/\.map\s*\(/.test(call.raw)) {
+    return { kind: 'dynamic', count: 10, description: 'input-size dependent fan-out (assuming N=10)' }
+  }
+
   if (/Array\.from\s*\(\s*\{\s*length\s*:\s*(\d+)/.test(call.raw)) {
     const count = Number(call.raw.match(/Array\.from\s*\(\s*\{\s*length\s*:\s*(\d+)/)?.[1])
     return { kind: 'fixed', count, description: `up to ${count} concurrent tasks` }
@@ -91,10 +95,6 @@ function parseParallelShape(call) {
     if (arrowCount > 0) {
       return { kind: 'fixed', count: arrowCount, description: `up to ${arrowCount} concurrent tasks` }
     }
-  }
-
-  if (/\.map\s*\(/.test(call.raw)) {
-    return { kind: 'dynamic', count: 10, description: 'input-size dependent fan-out (assuming N=10)' }
   }
 
   return { kind: 'unknown', count: 1, description: 'concurrency could not be inferred statically' }
@@ -162,13 +162,6 @@ const pricing = {
 let assumedCalls = 0
 for (const [model, count] of Object.entries(modelCounts)) {
   assumedCalls += count
-}
-for (const call of parallelCalls) {
-  const shape = parseParallelShape(call)
-  if (shape.kind === 'dynamic') {
-    assumedCalls += Math.max(shape.count - 1, 0)
-  }
-  // fixed parallels: agents already counted by findCalls('agent')
 }
 if (loopMatches.length > 0) {
   assumedCalls *= 3
