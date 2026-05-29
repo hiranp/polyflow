@@ -493,3 +493,98 @@ agent('Verify these:\n' + JSON.stringify(slim))
 Use `JSON.stringify(data)` (compact) for inter-stage payloads. The 2-space indent
 in `JSON.stringify(data, null, 2)` inflates large arrays by 20–40% for no benefit
 to the subagent — reserve it for the final human-facing return value only.
+
+---
+
+## 13. Spec-driven pipeline with state externalization and verification (GSD style)
+
+**When:** you are building a complex multi-step development workflow where you want to load a specification, plan the execution steps, execute tasks in parallel, verify the outputs using automated tests or compiler errors, and write the progress/state of the run to a file in the workspace so it is externalized and durable.
+
+```js
+export const meta = {
+  name: 'gsd-spec-pipeline',
+  description: 'GSD-style Plan-Execute-Verify pipeline with state externalized to disk',
+  phases: [
+    { title: 'Plan' },
+    { title: 'Execute' },
+    { title: 'Verify' }
+  ]
+}
+
+// 1. TOPOLOGY INPUT
+const specPath = typeof args === 'string' ? args : (args?.specPath ?? 'SPEC.md')
+
+phase('Plan')
+// Load the spec and generate task list (agent tool reads filesystem)
+const planResult = await agent(
+  `Read the spec at ${specPath} and break it down into independent tasks. `
+  + `Return a JSON array of tasks with id, file, and instruction.`,
+  { schema: PLAN_SCHEMA, label: 'Generate Tasks' }
+)
+
+const tasks = planResult?.tasks ?? []
+if (tasks.length === 0) {
+  return { status: 'empty', message: 'No tasks generated from spec' }
+}
+
+// Write the plan to disk (GSD practice: externalize planning state)
+await agent(
+  `Write the roadmap.md file to the workspace containing these tasks:\n`
+  + JSON.stringify(tasks),
+  { label: 'Save Roadmap' }
+)
+
+phase('Execute')
+// 2. PARALLEL PIPELINE: Execute each task and write the code files
+const executionResults = await pipeline(
+  tasks,
+  // Stage 1: Implement changes in files (fresh context per file)
+  async (task) => {
+    const result = await agent(
+      `Implement the instructions for task ${task.id}:\n${task.instruction}\n`
+      + `Modify target file ${task.file}. Return status and modified description.`,
+      { schema: EXECUTION_SCHEMA, label: `run:${task.id}` }
+    )
+    return result
+  },
+  // Stage 2: Write status/checkpoint file to disk to externalize state
+  async (execResult, task) => {
+    if (!execResult) return null
+    await agent(
+      `Write a progress markdown file '.planning/task-${task.id}.md' detailing:\n`
+      + JSON.stringify({ task, execResult }),
+      { label: `save-checkpoint:${task.id}` }
+    )
+    return execResult
+  }
+)
+
+const completed = executionResults.filter(Boolean)
+
+phase('Verify')
+// 3. NYQUIST LAYER: Automated verification step (run tests, compiler check, or skeptic)
+const verificationReport = await agent(
+  `Run the project tests and code validation suite to verify the changes. `
+  + `If tests fail, diagnose which files are incorrect and summarize the errors.`,
+  { schema: VERIFY_SCHEMA, label: 'Run Automated Tests' }
+)
+
+// GSD practice: Write the final verification report and update STATE.json
+await agent(
+  `Write the final verification report to '.planning/VERIFICATION_REPORT.md' and `
+  + `update '.planning/STATE.json' with this summary:\n`
+  + JSON.stringify({
+    success: verificationReport.allTestsPassed,
+    completedTasksCount: completed.length,
+    testErrors: verificationReport.errors
+  }),
+  { label: 'Save Final State' }
+)
+
+return {
+  success: verificationReport.allTestsPassed,
+  tasksRun: completed.length,
+  errors: verificationReport.errors
+}
+```
+

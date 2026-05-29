@@ -144,6 +144,66 @@ for (const [re, label] of [
   }
 }
 
+// --- 7. loop safety checks ---------------------------------------------------
+{
+  const re = /\bwhile\s*\(([^)]+)\)/g
+  let m
+  while ((m = re.exec(code))) {
+    const cond = m[1]
+    const line = lineOf(m.index)
+    const hasBudget = /budget\b/.test(cond)
+    const hasCounter = /[a-zA-Z_$][\w$]*\s*(?:<|<=|>|>=|!=|!==)\s*\d+/.test(cond) || /\b(?:rounds?|limit|max|count)\b/.test(cond)
+    if (!hasBudget && !hasCounter) {
+      warnings.push(`while loop at line ${line} lacks a budget guard or hard cap termination condition - this could lead to runaway token usage`)
+    }
+  }
+}
+
+// --- 8. parallel/pipeline filtering ------------------------------------------
+if (code.includes('parallel') || code.includes('pipeline')) {
+  if (!code.includes('.filter(')) {
+    warnings.push(`workflow uses parallel() or pipeline() but does not appear to filter results (e.g. .filter(Boolean)) — skipped/failed agents resolve to null and may cause errors downstream`)
+  }
+}
+
+// --- 9. phase title consistency ----------------------------------------------
+{
+  const metaPhases = []
+  const phasesMatch = src.match(/phases\s*:\s*\[([\s\S]*?)\]/)
+  if (phasesMatch) {
+    const phasesBlock = phasesMatch[1]
+    const titleRe = /title\s*:\s*['"`](.*?)['"`]/g
+    let tm
+    while ((tm = titleRe.exec(phasesBlock))) {
+      metaPhases.push(tm[1])
+    }
+  }
+
+  const codePhases = []
+  const phaseRe = /\bphase\s*\(\s*['"`](.*?)['"`]\s*\)/g
+  let pm
+  while ((pm = phaseRe.exec(src))) {
+    codePhases.push(pm[1])
+  }
+
+  const agentPhaseRe = /\bphase\s*:\s*['"`](.*?)['"`]/g
+  let apm
+  while ((apm = agentPhaseRe.exec(src))) {
+    codePhases.push(apm[1])
+  }
+
+  for (const cp of codePhases) {
+    if (!metaPhases.includes(cp)) {
+      warnings.push(`phase '${cp}' is referenced in the script but not declared in the meta.phases block`)
+    }
+  }
+  for (const mp of metaPhases) {
+    if (!codePhases.includes(mp)) {
+      warnings.push(`phase '${mp}' is declared in meta.phases but never called or assigned (e.g., via phase('${mp}') or { phase: '${mp}' })`)
+    }
+  }
+}
+
 // --- report ------------------------------------------------------------------
 const name = path.split('/').pop()
 for (const w of warnings) console.log(`  warn  ${w}`)

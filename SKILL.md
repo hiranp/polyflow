@@ -121,8 +121,9 @@ Before writing a line of code, answer these — the answers pick the topology.
    If no, it does not — prefer `pipeline`.
 5. **Does a step need structured data back** (not free text)? Then that
    `agent()` call needs a `schema`.
+6. **How will you verify the results automatically?** (Nyquist Validation Principle). Every workflow should incorporate a verification stage (e.g., executing code, running tests, or a skepticism loop) rather than trusting subagent output blindly.
 
-Write these five answers down for the user before coding. They are the design.
+Write these six answers down for the user before coding. They are the design.
 
 ---
 
@@ -239,9 +240,13 @@ Example: `(findings, file) => agent('Verify ' + file + '…')` re-uses the
 original `file` directly; `findings` stays small.
 
 **6. Two-tier model routing.** Route mechanical fan-out (extraction,
-classification, binary refutation) to `model: 'haiku'`; leave synthesis and
-judgement on the inherited model. Fan-out stages are the highest-volume and
-usually the least demanding. See pattern 12 in `references/patterns.md`.
+   classification, binary refutation) to `model: 'haiku'`; leave synthesis and
+   judgement on the inherited model. Fan-out stages are the highest-volume and
+   usually the least demanding. See pattern 12 in `references/patterns.md`.
+
+### Externalizing State & Artifacts
+
+The orchestrator cannot access the filesystem directly (`fs` is banned). To externalize workflow state, intermediate progress, or final outputs (e.g., a `STATE.json` or `.planning/` directory structure), design your `agent()` calls to explicitly run file writing or command execution tools (e.g., using `write_file`, `git commit`) to persist state onto the host filesystem. This prevents session context loss and allows external tools or agents to audit progress.
 
 For full signatures, every option, and every cap, **read
 `references/api-reference.md` now.** For ready-made orchestration shapes, **read
@@ -291,19 +296,17 @@ These are the mistakes that actually break workflows:
   loop index instead. `new Date(specificValue)` is fine.
 - **No filesystem, no Node APIs** in the orchestrator. No `require`, `fs`,
   `process`. Any file read/write/Bash work belongs **inside an `agent()`** — the
-  subagent has the normal tools; the orchestrator does not.
+  subagent has the normal tools; the orchestrator does not. However, subagents *should*
+  write files (e.g., logs, state documents) to externalize intermediate state to the host.
 - **`parallel()` takes thunks, not promises.** It must be
   `[() => agent(...), () => agent(...)]`, never `[agent(...), agent(...)]`. Bare
   calls start immediately and defeat the concurrency limiter.
 - **Always `.filter(Boolean)`.** `parallel()` and `pipeline()` put `null` in the
   slot of any item that threw, was skipped, or was dropped by the budget. The
-  result arrays have holes by design.
+  result arrays have holes by design; filter them out before doing downstream work.
 - **`meta` is a pure literal and the first statement.** No dynamic values, no
   code before it.
-- **Open-ended loops need a hard stop** — a counter (`while (found < 10)`) or a
-  budget guard (`while (budget.total && budget.remaining() > 50_000)`). With no
-  budget set, `budget.remaining()` is `Infinity`; an unguarded loop sprints into
-  the 1000-agent lifetime cap and throws.
+- **Open-ended loops need a hard stop** — both a hard iteration counter (`while (rounds < 10)`) AND a token/budget guard (`while (budget.total && budget.remaining() > 50_000)`). If either is missing, the loop is unsafe and can run to the 1000-agent lifetime cap.
 - **`isolation: 'worktree'` is expensive** (~200–500 ms + disk per agent). Use it
   only when parallel agents mutate files and would otherwise collide.
 - **Inter-stage context bloat.** Passing a stage's full structured output to the
