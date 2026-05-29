@@ -7,6 +7,7 @@
 // Exit 0 = clean (warnings allowed). Exit 1 = errors found, or bad usage.
 
 import { readFileSync } from 'node:fs'
+import { strip } from './lib/strip-comments.mjs'
 
 const MAX_BYTES = 524288 // 512 KB — scripts above this are rejected before parsing.
 
@@ -35,33 +36,6 @@ if (bytes > MAX_BYTES) {
 }
 
 // --- 2. comment/string-stripped copy (so checks ignore text in comments/strings)
-function strip(code) {
-  let out = ''
-  let i = 0
-  const n = code.length
-  while (i < n) {
-    const c = code[i], d = code[i + 1]
-    if (c === '/' && d === '/') {                    // line comment
-      while (i < n && code[i] !== '\n') { out += ' '; i++ }
-    } else if (c === '/' && d === '*') {             // block comment
-      out += '  '; i += 2
-      while (i < n && !(code[i] === '*' && code[i + 1] === '/')) {
-        out += code[i] === '\n' ? '\n' : ' '; i++
-      }
-      out += '  '; i += 2
-    } else if (c === '"' || c === "'" || c === '`') { // string / template
-      const q = c; out += ' '; i++
-      while (i < n && code[i] !== q) {
-        if (code[i] === '\\') { out += '  '; i += 2; continue }
-        out += code[i] === '\n' ? '\n' : ' '; i++
-      }
-      out += ' '; i++
-    } else {
-      out += c; i++
-    }
-  }
-  return out
-}
 const code = strip(src)
 
 // --- 3. meta must exist, be first, and be a literal --------------------------

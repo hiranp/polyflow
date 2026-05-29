@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 import { readFileSync } from 'node:fs'
+import { strip } from './lib/strip-comments.mjs'
 
-const path = process.argv[2]
+const args = process.argv.slice(2)
+const jsonFlag = args.includes('--json')
+const path = args.find(a => !a.startsWith('--'))
 if (!path) {
-  console.error('usage: node estimate-cost.mjs <path-to-workflow.js>')
+  console.error('usage: node estimate-cost.mjs <path-to-workflow.js> [--json]')
   process.exit(1)
 }
 
@@ -14,47 +17,6 @@ try {
 } catch (error) {
   console.error(`cannot read ${path}: ${error.message}`)
   process.exit(1)
-}
-
-function strip(code) {
-  let out = ''
-  let i = 0
-  const n = code.length
-  while (i < n) {
-    const c = code[i]
-    const d = code[i + 1]
-    if (c === '/' && d === '/') {
-      while (i < n && code[i] !== '\n') { out += ' '; i++ }
-    } else if (c === '/' && d === '*') {
-      out += '  '
-      i += 2
-      while (i < n && !(code[i] === '*' && code[i + 1] === '/')) {
-        out += code[i] === '\n' ? '\n' : ' '
-        i++
-      }
-      out += '  '
-      i += 2
-    } else if (c === '"' || c === "'" || c === '`') {
-      const quote = c
-      out += ' '
-      i++
-      while (i < n && code[i] !== quote) {
-        if (code[i] === '\\') {
-          out += '  '
-          i += 2
-          continue
-        }
-        out += code[i] === '\n' ? '\n' : ' '
-        i++
-      }
-      out += ' '
-      i++
-    } else {
-      out += c
-      i++
-    }
-  }
-  return out
 }
 
 const code = strip(src)
@@ -192,18 +154,30 @@ const pricing = {
   custom: [0.01, 0.05],
 }
 
+// --- Estimate total agent calls ------------------------------------------------
+// findCalls('agent') already counts every literal agent() in the source.
+// For fixed parallels like [() => agent(...), () => agent(...)], the agent()
+// calls are already counted.  For dynamic fan-outs (.map(() => agent(...))),
+// only one agent() appears in source but N execute at runtime — add (N - 1).
 let assumedCalls = 0
 for (const [model, count] of Object.entries(modelCounts)) {
   assumedCalls += count
 }
 for (const call of parallelCalls) {
   const shape = parseParallelShape(call)
-  assumedCalls += Math.max(shape.count - 1, 0)
+  if (shape.kind === 'dynamic') {
+    assumedCalls += Math.max(shape.count - 1, 0)
+  }
+  // fixed parallels: agents already counted by findCalls('agent')
 }
 if (loopMatches.length > 0) {
   assumedCalls *= 3
 }
 
+// --- Estimate cost range -------------------------------------------------------
+// Dynamic fan-out multiplier: only applies to agents inside .map() patterns,
+// not to the entire workflow.  We compute the extra cost from dynamic blocks
+// separately rather than multiplying all costs.
 let minCost = 0
 let maxCost = 0
 for (const [model, count] of Object.entries(modelCounts)) {
@@ -212,12 +186,29 @@ for (const [model, count] of Object.entries(modelCounts)) {
   maxCost += count * maxUnit
 }
 
-const parallelCostMultiplier = parallelCalls
-  .map(parseParallelShape)
-  .reduce((sum, shape) => sum + Math.max(shape.count - 1, 0), 1)
+// Add extra cost only for dynamic fan-outs (the one literal agent() call is
+// already included in the base cost above; add the remaining N-1 copies).
+let dynamicExtraCostMin = 0
+let dynamicExtraCostMax = 0
+for (const call of parallelCalls) {
+  const shape = parseParallelShape(call)
+  if (shape.kind !== 'dynamic') continue
+  // Find agent calls inside this parallel's source span to price them
+  const innerAgents = agentCalls.filter(a => a.start >= call.start && a.start < call.start + call.raw.length)
+  const extraCopies = Math.max(shape.count - 1, 0)
+  for (const inner of innerAgents) {
+    const model = formatModel(inferModel(inner))
+    const [minUnit, maxUnit] = pricing[model]
+    dynamicExtraCostMin += extraCopies * minUnit
+    dynamicExtraCostMax += extraCopies * maxUnit
+  }
+}
+minCost += dynamicExtraCostMin
+maxCost += dynamicExtraCostMax
+
 const loopMultiplier = loopMatches.length > 0 ? 3 : 1
-minCost *= parallelCostMultiplier * loopMultiplier
-maxCost *= parallelCostMultiplier * loopMultiplier
+minCost *= loopMultiplier
+maxCost *= loopMultiplier
 
 const phasesLine = phases.length ? phases.join(' -> ') : 'None declared'
 const agentSummary = [
@@ -229,27 +220,54 @@ const agentSummary = [
   `${modelCounts.custom} custom`,
 ].join(', ')
 
-console.log(`polyflow cost estimate: ${path.split('/').pop()}`)
-console.log('----------------------------------------')
-console.log(`Phases:    ${phasesLine}`)
-console.log(`Agents:    ${agentSummary}`)
-if (parallelCalls.length > 0) {
-  console.log(`Fan-out:   ${parallelCalls.map(parseParallelShape).map(s => s.description).join('; ')}`)
-} else {
-  console.log('Fan-out:   None')
-}
-console.log(`Pipeline:  ${pipelineCalls.length > 0 ? `${pipelineCalls.length} pipeline stage chain(s)` : 'None'}`)
-console.log(`Loop:      ${loopMatches.length > 0 ? `${loopMatches.length} loop construct(s) detected` : 'None'}`)
-console.log('----------------------------------------')
-if (warnings.length > 0) {
-  console.log('Warnings:')
-  for (const warning of warnings) {
-    console.log(`  - ${warning}`)
+const fanOutDescriptions = parallelCalls.map(parseParallelShape).map(s => s.description)
+
+if (jsonFlag) {
+  const result = {
+    file: path.split('/').pop(),
+    phases: phases.length > 0 ? phases : [],
+    agents: {
+      staticCount: agentCalls.length,
+      byModel: { ...modelCounts },
+    },
+    fanOut: fanOutDescriptions,
+    pipelines: pipelineCalls.length,
+    loops: loopMatches.length,
+    warnings,
+    estimate: {
+      minCost: Number(minCost.toFixed(4)),
+      maxCost: Number(maxCost.toFixed(4)),
+      assumedCalls,
+      assumptions: [
+        'N=10 for dynamic fan-out',
+        ...(loopMatches.length > 0 ? ['3 loop rounds'] : []),
+      ],
+    },
   }
+  console.log(JSON.stringify(result, null, 2))
 } else {
-  console.log('Warnings:')
-  console.log('  - None')
+  console.log(`polyflow cost estimate: ${path.split('/').pop()}`)
+  console.log('----------------------------------------')
+  console.log(`Phases:    ${phasesLine}`)
+  console.log(`Agents:    ${agentSummary}`)
+  if (parallelCalls.length > 0) {
+    console.log(`Fan-out:   ${fanOutDescriptions.join('; ')}`)
+  } else {
+    console.log('Fan-out:   None')
+  }
+  console.log(`Pipeline:  ${pipelineCalls.length > 0 ? `${pipelineCalls.length} pipeline stage chain(s)` : 'None'}`)
+  console.log(`Loop:      ${loopMatches.length > 0 ? `${loopMatches.length} loop construct(s) detected` : 'None'}`)
+  console.log('----------------------------------------')
+  if (warnings.length > 0) {
+    console.log('Warnings:')
+    for (const warning of warnings) {
+      console.log(`  - ${warning}`)
+    }
+  } else {
+    console.log('Warnings:')
+    console.log('  - None')
+  }
+  console.log('----------------------------------------')
+  console.log(`Rough estimate (assuming N=10 for dynamic fan-out${loopMatches.length ? ', 3 loop rounds' : ''}):`)
+  console.log(`  ~$${minCost.toFixed(2)}-$${maxCost.toFixed(2)} per run across ~${assumedCalls} agent calls`)
 }
-console.log('----------------------------------------')
-console.log(`Rough estimate (assuming N=10 for dynamic fan-out${loopMatches.length ? ', 3 loop rounds' : ''}):`)
-console.log(`  ~$${minCost.toFixed(2)}-$${maxCost.toFixed(2)} per run across ~${assumedCalls} agent calls`)
