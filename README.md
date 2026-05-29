@@ -1,11 +1,21 @@
 # polyflow
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+<p align="center">
+  <img src="assets/logo.png" alt="polyflow Logo" width="350" />
+</p>
 
-A **skill** that teaches Claude, Codex, Copilot, and Gemini to author **workflows** -- deterministic
-multi-agent orchestration scripts that fan work out to fresh-context subagents
-under plain JavaScript control flow.
+<p align="center">
+  <b>A skill that teaches Claude, Codex, Copilot, and Gemini to author workflows</b><br/>
+  Deterministic multi-agent orchestration scripts under plain JavaScript control flow.
+</p>
+
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions Welcome" /></a>
+</p>
+
+***
+
 
 Design principle: **topology before coding**. Pick the workflow shape first
 (fan-out, pipeline, or loop), capture it in a workflow spec, then write the
