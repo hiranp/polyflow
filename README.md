@@ -163,5 +163,5 @@ Pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ## Credits
 
-Inspired by [Ray Amjad](https://www.youtube.com/@RAmjad) and [Claude's workflow capabilities](https://claude.ai/blog/claude-code-workflows).
+Inspired by [Claude's workflow capabilities](https://code.claude.com/docs/en/workflows) and [Ray Amjad](https://www.youtube.com/@RAmjad). Built with community feedback, testing, and ideas.
 Built with community feedback, testing, and ideas.
