@@ -127,8 +127,9 @@ Write these six answers down for the user before coding. They are the design.
 
 Before writing JavaScript, copy `assets/templates/workflow-spec.template.md`
 into a working `WORKFLOW-SPEC.md` (or equivalent scratch artifact), fill it in,
-and get human sign-off on the topology and barrier decision. Do not begin Step 4
-until that spec exists and has been reviewed.
+and get human sign-off on the topology and barrier decision. Run
+`node scripts/validate-workflow-spec.mjs WORKFLOW-SPEC.md` and fix every error
+before Step 4. Do not begin Step 4 until that spec exists and has been reviewed.
 
 ---
 
