@@ -836,3 +836,53 @@ orchestrator with `Date.now()` — that breaks determinism. Keep the stored summ
 compact and typed so a later semantic index can reuse the same artifact format.
 The stable default is `.planning/memory/index.jsonl`, one entry per line,
 validated against `assets/templates/memory-entry.schema.json`.
+
+---
+
+## 17. MCP tool call in a leaf agent
+
+**When:** a stage needs structured data from an MCP server (for example,
+Sentry, ticketing, docs retrieval, or internal platform tools) but the
+orchestrator should stay deterministic and tool-agnostic.
+
+Keep the MCP call inside a leaf `agent()` stage and pass server, tool, and
+params explicitly in the prompt. This pattern is portable across runtimes where
+the MCP server is registered in the active session.
+
+```js
+const MCP_RESULT_SCHEMA = {
+  type: 'object',
+  required: ['ok', 'result'],
+  additionalProperties: false,
+  properties: {
+    ok: { type: 'boolean' },
+    result: { type: 'object' },
+    error: { type: 'string' },
+  },
+}
+
+const mcpServer = input?.mcpServer ?? 'sentry'
+const toolName = input?.toolName ?? 'get_issues'
+const params = input?.params ?? { limit: 25 }
+
+const toolResult = await agent(
+  `Use the ${mcpServer} MCP server and call ${toolName} with params:\n`
+  + `${JSON.stringify(params)}\n\n`
+  + `Return a strict object with ok, result, and optional error.`,
+  { label: `mcp:${toolName}`, schema: MCP_RESULT_SCHEMA },
+)
+
+if (!toolResult?.ok) {
+  return { status: 'mcp-error', toolName, error: toolResult?.error ?? 'Unknown MCP error' }
+}
+
+return { status: 'ok', toolName, result: toolResult.result }
+```
+
+Design notes:
+
+- Keep orchestration deterministic: use MCP only in leaf stages, not for control
+  flow decisions that depend on hidden side effects.
+- Keep payloads compact: project only fields needed downstream before passing
+  MCP responses to later stages.
+- Validate tool output with a schema to avoid prompt-format drift.
