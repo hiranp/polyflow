@@ -95,7 +95,11 @@ gated for a reason (it can spend a lot of tokens). Pick deliberately:
 |---|---|
 | One subagent, one task | The plain **`Agent`** tool — no workflow |
 | A reusable procedure where **Claude** picks the steps each run | A **Skill** |
+| Open-ended debugging, novel problem solving, or dynamic exploration | A **conversational agent** or **ReAct loop** |
 | Many subagents in a **fixed** shape (fan-out / pipeline / loop), same every run, worth resuming | A **Workflow** ✅ |
+
+**Optimal Use Cases:** Workflows excel at repeatable, scalable processes like "Review PR across 5 dimensions", "Extract themes from 1,000 feedback tickets", or "Sweep codebase for dead code".
+**Anti-Patterns:** Do not use workflows for dynamic, open-ended tasks where the steps cannot be predicted upfront, like "Fix this vague build error" or "Set up a new database schema based on a loose PRD".
 
 A workflow earns its cost when **all** of these are true: the work is parallel or
 multi-stage; the orchestration must be deterministic and resumable; and
@@ -255,7 +259,9 @@ original `file` directly; `findings` stays small.
 
 ### Externalizing State & Artifacts
 
-The orchestrator cannot access the filesystem directly (`fs` is banned). To externalize workflow state, intermediate progress, or final outputs (e.g., a `STATE.json` or `.planning/` directory structure), design your `agent()` calls to explicitly run file writing or command execution tools (e.g., using `write_file`, `git commit`) to persist state onto the host filesystem. This prevents session context loss and allows external tools or agents to audit progress.
+The orchestrator cannot access the filesystem directly (`fs` and Node APIs are banned). Because of this sandbox constraint, you cannot persist intermediate data or state directly from the JavaScript body. 
+
+To externalize workflow state, intermediate progress, or final outputs (e.g., a `STATE.json` or `.planning/` directory structure), design your `agent()` calls to explicitly run file writing or command execution tools (e.g., using `write_file`, `git commit`) to persist state onto the host filesystem. This prevents session context loss, mitigates context-passing bloat on long discoveries, and allows external tools or agents to audit progress.
 
 If a workflow needs memory across runs, use a scoped memory contract instead of
 a shared live memory layer: perform a read-only recall stage before the main
