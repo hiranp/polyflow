@@ -125,6 +125,11 @@ Before writing a line of code, answer these — the answers pick the topology.
 
 Write these six answers down for the user before coding. They are the design.
 
+Before writing JavaScript, copy `assets/templates/workflow-spec.template.md`
+into a working `WORKFLOW-SPEC.md` (or equivalent scratch artifact), fill it in,
+and get human sign-off on the topology and barrier decision. Do not begin Step 4
+until that spec exists and has been reviewed.
+
 ---
 
 ## Step 3 — The decision that matters most: `pipeline` vs `parallel`
@@ -147,6 +152,9 @@ Smell test: writing `const a = await parallel(...)`, then a plain
 transform (`flat`/`map`/`filter`) with no cross-item dependency, then another
 `parallel(...)` — that middle transform does not need the barrier. Make it a
 pipeline stage instead. **When in doubt, `pipeline`.**
+
+Before moving on, record the Step 2 answers and this Step 3 decision in the
+workflow spec. The spec must explicitly say whether there is a barrier and why.
 
 ---
 
@@ -248,6 +256,14 @@ original `file` directly; `findings` stays small.
 
 The orchestrator cannot access the filesystem directly (`fs` is banned). To externalize workflow state, intermediate progress, or final outputs (e.g., a `STATE.json` or `.planning/` directory structure), design your `agent()` calls to explicitly run file writing or command execution tools (e.g., using `write_file`, `git commit`) to persist state onto the host filesystem. This prevents session context loss and allows external tools or agents to audit progress.
 
+If a workflow needs memory across runs, use a scoped memory contract instead of
+a shared live memory layer: perform a read-only recall stage before the main
+work, optionally persist a compact summary after the work finishes, and keep the
+first implementation file-based so the state is inspectable and replay-safe. If
+a semantic index is needed later, put it behind the same recall/persist contract
+instead of changing the workflow shape. The default artifact pair is
+`assets/templates/memory-entry.schema.json` plus `.planning/memory/index.jsonl`.
+
 For full signatures, every option, and every cap, **read
 `references/api-reference.md` now.** For ready-made orchestration shapes, **read
 `references/patterns.md`** and copy the one that fits Step 2's answers. Or start
@@ -290,6 +306,9 @@ whole script after the first run — edit the file.
 
 These are the mistakes that actually break workflows:
 
+- **No coding before the workflow spec.** Fill out the workflow design spec,
+  get human sign-off, then write the JS. If the topology or barrier choice is
+  still fuzzy, you are not ready for Step 4.
 - **Determinism bans.** `Date.now()`, `Math.random()`, and argless `new Date()`
   **throw** inside a workflow — they would break resume. Pass timestamps in via
   `args` and stamp results *after* the workflow returns; vary "randomness" by
@@ -317,6 +336,16 @@ These are the mistakes that actually break workflows:
 - **Growing `seen` lists in discovery loops.** Re-sending the full history each
   round means round N pays for N−1 items of input context. Use a sliding window:
   `[...seen].slice(-30).join('\n')`.
+
+### Scope discipline
+
+- **YAGNI.** Add only what the current workflow needs. Do not add schema fields,
+  phases, or branches "just in case".
+- **Surgical changes.** When iterating on a workflow, edit the failing stage or
+  the narrowest supporting context. Do not restructure unrelated stages.
+- **Token cost is a design constraint.** Every `agent()` call has a cost. Name
+  the model deliberately, keep prompts lean, and project structured output
+  before passing it to another stage.
 
 ---
 

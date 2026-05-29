@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "polyflow/memory-entry.schema.json",
+  "title": "polyflow memory index entry",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "entryId",
+    "workflowName",
+    "runDate",
+    "topic",
+    "summary",
+    "status",
+    "artifactPaths",
+    "tags"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "entryId": {
+      "type": "string",
+      "description": "Caller-supplied stable identifier for this persisted memory entry."
+    },
+    "workflowName": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "runDate": {
+      "type": "string",
+      "description": "ISO-8601 timestamp supplied by the caller or parent workflow."
+    },
+    "topic": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "partial", "failed"]
+    },
+    "sourceSpecPath": {
+      "type": "string"
+    },
+    "artifactPaths": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "relatedFiles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["passed", "method"],
+      "additionalProperties": false,
+      "properties": {
+        "passed": { "type": "boolean" },
+        "method": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

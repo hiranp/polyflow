@@ -144,6 +144,29 @@ for (const [re, label] of [
   }
 }
 
+// --- 6b. large fan-out should usually choose haiku ---------------------------
+{
+  const arrayRe = /\bparallel\s*\(\s*\[([\s\S]*?)\]\s*\)/g
+  let match
+  while ((match = arrayRe.exec(src))) {
+    const thunkCount = (match[1].match(/=>/g) ?? []).length
+    if (thunkCount > 5 && !/model\s*:\s*['"`]haiku['"`]/.test(match[0])) {
+      warnings.push(`parallel fan-out at line ${lineOf(match.index)} has ${thunkCount} tasks and no explicit model: 'haiku' — high-volume mechanical work is usually a good Haiku candidate`)
+    }
+  }
+
+  const fromRe = /\bparallel\s*\(\s*Array\.from\s*\(\s*\{\s*length\s*:\s*(\d+)/g
+  while ((match = fromRe.exec(src))) {
+    const thunkCount = Number(match[1])
+    if (thunkCount > 5) {
+      const tail = src.slice(match.index, match.index + 220)
+      if (!/model\s*:\s*['"`]haiku['"`]/.test(tail)) {
+        warnings.push(`parallel fan-out at line ${lineOf(match.index)} has ${thunkCount} tasks and no explicit model: 'haiku' — high-volume mechanical work is usually a good Haiku candidate`)
+      }
+    }
+  }
+}
+
 // --- 7. loop safety checks ---------------------------------------------------
 {
   const re = /\bwhile\s*\(([^)]+)\)/g
@@ -163,6 +186,15 @@ for (const [re, label] of [
 if (code.includes('parallel') || code.includes('pipeline')) {
   if (!code.includes('.filter(')) {
     warnings.push(`workflow uses parallel() or pipeline() but does not appear to filter results (e.g. .filter(Boolean)) — skipped/failed agents resolve to null and may cause errors downstream`)
+  }
+}
+
+// --- 8b. pretty-printed JSON in prompts inflates token use -------------------
+{
+  const re = /JSON\.stringify\([^\n)]*,\s*null\s*,\s*2\s*\)/g
+  let match
+  while ((match = re.exec(src))) {
+    warnings.push(`JSON.stringify(..., null, 2) at line ${lineOf(match.index)} inflates prompt tokens — use compact JSON.stringify(data) for inter-stage payloads`)
   }
 }
 

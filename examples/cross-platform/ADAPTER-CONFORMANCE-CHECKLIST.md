@@ -1,6 +1,6 @@
 # Platform Adapter Conformance Checklist
 
-Use this checklist to verify that adapter outputs from Claude Code, Codex, Copilot, and Gemini conform to the canonical spec in:
+Use this checklist to verify that adapter outputs from Claude Code, Codex, Copilot, Gemini, Kilo, Gumloop, and OpenCode conform to the canonical spec in:
 
 - examples/cross-platform/portable-skill-spec.json
 
@@ -22,6 +22,7 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
 - Error-handling parity: Null/failed stage outputs are handled safely.
 - Model-policy parity: Semantic model classes map correctly to platform-specific models.
 - Artifact parity: Intermediate and final outputs are persisted for replay/audit.
+- Memory-contract parity: Recall reads from the stable memory store and persistence writes compatible entries back.
 
 ## Checklist matrix
 
@@ -30,6 +31,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C02 Stage sequence matches canonical definition
@@ -37,6 +41,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C03 Parallel stages preserve intended fan-out behavior
@@ -44,6 +51,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C04 Review stage output validates against findings schema
@@ -51,6 +61,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C05 Verify stage output validates against verdict schema
@@ -58,6 +71,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C06 Null/skip outputs do not crash orchestration
@@ -65,6 +81,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C07 Stop conditions terminate as expected
@@ -72,6 +91,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C08 Deterministic execution (no random/time branching)
@@ -79,6 +101,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C09 Model mapping follows semantic classes
@@ -86,6 +111,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C10 Final output includes required canonical fields
@@ -93,6 +121,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C11 Artifacts are persisted for replay and audit
@@ -100,6 +131,9 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 - C12 Retry/failure paths produce explicit error status
@@ -107,6 +141,19 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - Codex: [ ] PASS [ ] FAIL
   - Copilot: [ ] PASS [ ] FAIL
   - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
+  - Evidence:
+
+- C13 Memory contract persists and recalls compatible entries
+  - Claude: [ ] PASS [ ] FAIL
+  - Codex: [ ] PASS [ ] FAIL
+  - Copilot: [ ] PASS [ ] FAIL
+  - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
 ## PASS/FAIL guidance
@@ -127,5 +174,6 @@ For each row, include:
 Adapter is conformant when:
 
 - All critical checks pass: C01-C08 and C10.
+- For workflows that use cross-run memory, C13 also passes.
 - No more than one non-critical check fails.
 - Every failed check has a documented remediation owner and ETA.

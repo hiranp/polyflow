@@ -1,17 +1,18 @@
 # Example workflows
 
-Six complete, runnable workflow scripts. Each is a real, lint-clean file — find
-the closest match to what you are building, read it, then adapt it. All six pass
+Seven complete, runnable workflow scripts. Each is a real, lint-clean file — find
+the closest match to what you are building, read it, then adapt it. All seven pass
 `scripts/validate-workflow.mjs`.
 
 | File | Topology | Demonstrates |
-|---|---|---|
+| --- | --- | --- |
 | `review-branch.js` | pipeline + nested `parallel` | structured `schema` on every stage, a Haiku verify stage, `phase` set inside stages |
 | `implement-and-review.js` | `do/while` loop | a round cap, a `schema` with a `passed` boolean that drives the loop, `args` used as a plain task string |
 | `triage-sentry.js` | list → pipeline | `args` normalization, a `.filter()` + early `return`, an MCP tool call inside an agent |
 | `dead-code-sweep.js` | loop-until-dry | a dry-streak counter, a hard `MAX_ROUNDS` cap, parallel removal that self-reverts |
 | `api-contract-drift-detector.js` | fan-out with a barrier | a deliberate `parallel()` barrier, `args` with defaults, `model: 'haiku'` on the fan-out |
 | `customer-feedback-theme-extractor.js` | parallel → barrier | a barrier because clustering needs the whole set, a Haiku summarize stage |
+| `software-dev-pipeline.js` | spec-intake → recall → pipeline → verify → persist | pre-approved spec intake, scoped memory recall/persist, plan/execution checkpoints, selective worktree isolation |
 
 ## What to copy from them
 
@@ -39,6 +40,11 @@ a counter or a budget guard.
 `api-contract-drift-detector.js` and `customer-feedback-theme-extractor.js` use
 `parallel` as a *deliberate* barrier — and each says in a comment why the whole
 result set is genuinely needed at once.
+
+**Scoped memory across runs.** `software-dev-pipeline.js` shows the file-backed
+memory contract: read from `.planning/memory/index.jsonl` before the main work,
+then optionally append one compact memory entry after verification. The artifact
+shape is anchored by `assets/templates/memory-entry.schema.json`.
 
 ## Running one
 
