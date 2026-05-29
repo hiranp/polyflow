@@ -7,6 +7,10 @@ A **skill** that teaches Claude, Codex, Copilot, and Gemini to author **workflow
 multi-agent orchestration scripts that fan work out to fresh-context subagents
 under plain JavaScript control flow.
 
+Design principle: **topology before coding**. Pick the workflow shape first
+(fan-out, pipeline, or loop), capture it in a workflow spec, then write the
+workflow file.
+
 A workflow is a JavaScript file. The loops, the conditionals, the fan-out are
 ordinary code that you control. Only the leaf `agent()` calls spend model tokens,
 and each one runs in its own clean context window. The result is multi-agent work
@@ -24,10 +28,12 @@ correct, runnable file back.
 | `references/api-reference.md` | Complete manual: every global, every option, every cap and constant |
 | `references/patterns.md` | Copy-paste orchestration patterns (fan-out, pipeline, loop-until-budget, judge panel, and more) |
 | `assets/templates/` | Starter files for the three core shapes: fan-out, pipeline, loop |
-| `assets/examples/` | Six complete runnable example workflows |
+| `assets/examples/` | Seven complete runnable example workflows |
 | `scripts/validate-workflow.mjs` | Linter: checks a workflow file against the parser's hard rules before you run it |
+| `scripts/validate-workflow-spec.mjs` | Spec validator: checks required workflow-spec sections and sign-off completeness |
+| `scripts/estimate-cost.mjs` | Static estimator: projects agent count, fan-out/loop shape, and rough run cost |
 | `scripts/scaffold-evals.mjs` | Generates eval scaffolding from `evals/evals.json` |
-| `examples/cross-platform/` | Portable canonical spec and per-platform adapter notes (Claude / Codex / Copilot / Gemini) |
+| `examples/cross-platform/` | Portable canonical spec and per-platform adapter notes (Claude / Codex / Copilot / Gemini / Kilo / Gumloop / OpenCode) |
 | `evals/evals.json` | Starter evaluation test cases |
 
 ## Install
@@ -65,13 +71,33 @@ Or set it permanently in `.claude/settings.local.json`:
 Claude (or any supported AI) uses this skill to design, write, and validate the file, then runs it.
 Watch live progress with `/workflows`.
 
-### 3 -- Lint before running
+### 3 -- Create and validate the workflow spec first
+
+Use [assets/templates/workflow-spec.template.md](assets/templates/workflow-spec.template.md)
+to decide topology/barrier/schema/verification before writing JavaScript.
+
+```bash
+node scripts/validate-workflow-spec.mjs <path-to-WORKFLOW-SPEC.md>
+```
+
+Fix every reported issue before writing the workflow file.
+
+### 4 -- Lint before running
 
 ```bash
 node ~/.claude/skills/polyflow/scripts/validate-workflow.mjs <path-to-file.js>
 ```
 
 Exit 0 means the file is clean. Fix any reported errors before invoking the workflow.
+
+### 5 -- Estimate cost before long runs
+
+```bash
+node ~/.claude/skills/polyflow/scripts/estimate-cost.mjs <path-to-file.js>
+```
+
+This gives a static estimate of model mix, fan-out/loop amplification, and rough
+per-run cost range.
 
 ## How it works
 
@@ -95,12 +121,12 @@ orchestration logic (loops, conditions, fan-out) is plain JavaScript you can rea
 Polyflow workflows are portable. The `examples/cross-platform/` directory contains:
 
 - A canonical portable spec (`portable-skill-spec.json`)
-- Per-platform runner guides for Claude Code, Codex, Copilot, and Gemini
+- Per-platform runner guides for Claude Code, Codex, Copilot, Gemini, Kilo Code, and Gumloop
 - An adapter conformance checklist
 
 ## Example workflows
 
-Six production-quality examples live in `assets/examples/`:
+Seven production-quality examples live in `assets/examples/`:
 
 | Workflow | Pattern |
 | --- | --- |
@@ -110,11 +136,12 @@ Six production-quality examples live in `assets/examples/`:
 | `dead-code-sweep.js` | loop-until-dry with dry-streak counter |
 | `api-contract-drift-detector.js` | fan-out with deliberate barrier |
 | `customer-feedback-theme-extractor.js` | parallel to barrier to cluster |
+| `software-dev-pipeline.js` | spec-intake to recall to execute/verify with scoped memory persist |
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) 2.1.149+ (or compatible Codex / Copilot / Gemini runtime)
-- Node.js 18+ (for the linter and scaffold scripts)
+- Node.js 18+ (for validation, estimation, and eval scaffold scripts)
 
 ## Contributing
 
