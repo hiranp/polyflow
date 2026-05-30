@@ -14,7 +14,18 @@ function ensureWithinProject(projectRoot, candidatePath) {
 }
 
 function sanitizeFilePart(value) {
-  return String(value).toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
+  const sanitized = String(value).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '')
+  return (sanitized || 'unnamed').slice(0, 120)
+}
+
+function stableHash(value) {
+  const input = String(value)
+  let hash = 0
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) - hash) + input.charCodeAt(i)
+    hash |= 0
+  }
+  return Math.abs(hash).toString(36)
 }
 
 async function readJSON(filePath) {
@@ -91,7 +102,10 @@ export async function runPortableReviewAndVerify({
   }
 
   for (const finding of allFindings) {
-    const findingId = sanitizeFilePart(`${finding.dimension}-${finding.file}-${finding.title}`)
+    const findingFile = finding?.file ?? 'unknown-file'
+    const findingTitle = finding?.title ?? 'unknown-title'
+    const findingDimension = finding?.dimension ?? 'unknown-dimension'
+    const findingId = sanitizeFilePart(`${findingDimension}-${stableHash(`${findingFile}:${findingTitle}:${JSON.stringify(finding)}`)}`)
     const verdict = await adapter.verify({ finding, projectRoot: resolvedRoot, artifactsDir: artifactsRoot })
     const record = { finding, verdict: verdict ?? null }
     verified.push(record)

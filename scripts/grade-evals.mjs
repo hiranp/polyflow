@@ -62,10 +62,15 @@ function computeMean(values) {
 }
 
 function computeStddev(values) {
-  if (values.length < 2) return 0
+  if (values.length < 2) return null
   const mean = computeMean(values)
   const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / values.length
   return Math.sqrt(variance)
+}
+
+function computeGainPercent(withSkillValue, withoutSkillValue) {
+  if (withSkillValue === null || withoutSkillValue === null || withoutSkillValue === 0) return null
+  return ((withSkillValue - withoutSkillValue) / withoutSkillValue) * 100
 }
 
 function checkAssertion(assertionText, fileContent, filePath) {
@@ -259,15 +264,24 @@ for (const testCase of evals) {
     try {
       outputFiles = readdirSync(outputsDir).filter(f => !f.startsWith('.'))
     } catch {
-      // Ignore
+      // Ignore unreadable output directories; missing artifacts are handled below.
     }
 
     let fileContent = ''
-    let filePath = ''
+    let firstOutputPath = ''
     if (outputFiles.length > 0) {
       const sorted = outputFiles.sort()
-      filePath = path.join(outputsDir, sorted[0])
-      fileContent = sorted.map(name => readFileSync(path.join(outputsDir, name), 'utf8')).join('\n\n')
+      firstOutputPath = path.join(outputsDir, sorted[0])
+      // Cap aggregate reads to keep grading bounded on large output directories.
+      const maxBytes = 1_000_000
+      let usedBytes = 0
+      for (const name of sorted) {
+        const content = readFileSync(path.join(outputsDir, name), 'utf8')
+        const nextBytes = Buffer.byteLength(content, 'utf8')
+        if (usedBytes + nextBytes > maxBytes) break
+        fileContent += (fileContent ? '\n\n' : '') + content
+        usedBytes += nextBytes
+      }
     }
 
     const gradingData = JSON.parse(readFileSync(gradingPath, 'utf8'))
@@ -275,14 +289,14 @@ for (const testCase of evals) {
 
     let passedCount = 0
     const updatedAssertions = assertions.map(assertion => {
-      if (!filePath) {
+      if (!firstOutputPath) {
         return {
           ...assertion,
           passed: false,
           evidence: 'No output file found in outputs/ directory'
         }
       }
-      const res = checkAssertion(assertion.text, fileContent, filePath)
+      const res = checkAssertion(assertion.text, fileContent, firstOutputPath)
       if (res.passed) passedCount++
       return {
         ...assertion,
@@ -293,9 +307,9 @@ for (const testCase of evals) {
 
     const total = assertions.length
     const passRate = total > 0 ? passedCount / total : 0
-    const determinismAssertions = updatedAssertions.filter(a => /determin|resume|replay/i.test(a.text))
-    const determinismPassed = determinismAssertions.filter(a => a.passed).length
-    const determinismPassRate = determinismAssertions.length > 0 ? determinismPassed / determinismAssertions.length : null
+    const determinismRelatedAssertions = updatedAssertions.filter(a => /\b(determinism|deterministic|resume|replay)\b/i.test(a.text))
+    const determinismPassed = determinismRelatedAssertions.filter(a => a.passed).length
+    const determinismPassRate = determinismRelatedAssertions.length > 0 ? determinismPassed / determinismRelatedAssertions.length : null
 
     gradingData.assertion_results = updatedAssertions
     gradingData.summary = {
@@ -362,9 +376,9 @@ if (existsSync(benchmarkPath)) {
       determinism_pass_rate: deltaDeterminism,
     },
     gain: {
-      quality_percent: (deltaPass !== null && withoutSkillPassMean) ? (deltaPass / withoutSkillPassMean) * 100 : null,
-      time_percent: (deltaTime !== null && withoutSkillTimeMean) ? ((withoutSkillTimeMean - withSkillTimeMean) / withoutSkillTimeMean) * 100 : null,
-      tokens_percent: (deltaTokens !== null && withoutSkillTokensMean) ? ((withoutSkillTokensMean - withSkillTokensMean) / withoutSkillTokensMean) * 100 : null,
+      quality_percent: computeGainPercent(withSkillPassMean, withoutSkillPassMean),
+      time_percent: (withSkillTimeMean !== null && withoutSkillTimeMean !== null) ? computeGainPercent(withoutSkillTimeMean, withSkillTimeMean) : null,
+      tokens_percent: (withSkillTokensMean !== null && withoutSkillTokensMean !== null) ? computeGainPercent(withoutSkillTokensMean, withSkillTokensMean) : null,
     },
   }
 
