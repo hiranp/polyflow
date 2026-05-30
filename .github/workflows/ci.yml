@@ -41,3 +41,17 @@ jobs:
 
       - name: Validate portable runtime contract
         run: node scripts/validate-portable-spec.mjs examples/cross-platform/portable-skill-spec.json
+
+  validate-runtime-plugin:
+    name: Validate runtime plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Smoke-test runtime-file-backed-plugin.mjs
+        run: node scripts/validate-runtime-plugin.mjs
