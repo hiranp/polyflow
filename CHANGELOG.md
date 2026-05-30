@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- `examples/cross-platform/runtime-file-backed-plugin.mjs`: real project-scoped,
+  file-backed runtime/plugin reference implementation with replay from artifacts.
+- `scripts/validate-portable-spec.mjs`: runtime contract validator for
+  `portable-skill-spec.json`.
+- Eval cases for runtime/plugin contract coverage and baseline delta reporting in
+  `evals/evals.json`.
+
+### Changed
+- `examples/cross-platform/portable-skill-spec.json`: added canonical
+  `runtimeContract` for project-only scope, file-backed persistence, explicit
+  shared-state rejection, plugin I/O boundaries, and determinism constraints.
+- `scripts/grade-evals.mjs`: computes pass-rate/time/token/determinism summaries
+  and baseline deltas from grading and timing artifacts.
+- `scripts/scaffold-evals.mjs`: scaffolds benchmark gain fields for measurable
+  quality/time/token improvements.
+- `examples/cross-platform/ADAPTER-CONFORMANCE-CHECKLIST.md`: added C14/C15
+  acceptance checks for project-root confinement and no global/shared state.
+
 ## [0.2.0] - 2026-05-29
 
 ### Fixed

@@ -462,3 +462,9 @@ every unchanged call before it from cache. This is what makes a workflow file
 genuinely editable mid-flight, and what lets a crashed run resume from where it
 died. Resume works **only within the session that created the run**; if the prior
 run is still going, stop it first.
+
+For portable adapters outside Claude runtime internals, mirror this behavior with
+project-local, file-backed artifacts only (for example `./.polyflow/runs/<run-id>`).
+Do not rely on global/shared singleton state when implementing plugin runtimes.
+Replay and resume should be computed from persisted artifacts plus deterministic
+inputs only.

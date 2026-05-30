@@ -1,5 +1,6 @@
-// Adapter sketch: Portable spec -> Claude Workflow runtime
-// This is intentionally minimal and shows mapping strategy, not production code.
+// Adapter mapping example: Portable spec -> Claude Workflow runtime.
+// For a file-backed project-scoped runtime/plugin implementation, see:
+// examples/cross-platform/runtime-file-backed-plugin.mjs
 
 export const meta = {
   name: 'portable-review-and-verify-claude',

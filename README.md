@@ -44,6 +44,7 @@ correct, runnable file back.
 | `scripts/estimate-cost.mjs` | Static estimator: projects agent count, fan-out/loop shape, and rough run cost |
 | `scripts/scaffold-evals.mjs` | Generates eval scaffolding from `evals/evals.json` |
 | `examples/cross-platform/` | Portable canonical spec and per-platform adapter notes (Claude / Codex / Copilot / Gemini / Kilo / Gumloop / OpenCode) |
+| `examples/cross-platform/runtime-file-backed-plugin.mjs` | Project-scoped file-backed runtime/plugin reference implementation |
 | `evals/evals.json` | Starter evaluation test cases |
 
 ## Install
@@ -133,6 +134,7 @@ Polyflow workflows are portable. The `examples/cross-platform/` directory contai
 - A canonical portable spec (`portable-skill-spec.json`)
 - Per-platform runner guides for Claude Code, Codex, Copilot, Gemini, Kilo Code, and Gumloop
 - An adapter conformance checklist
+- A real file-backed runtime/plugin reference (`runtime-file-backed-plugin.mjs`) with per-project isolation
 
 ## Example workflows
 

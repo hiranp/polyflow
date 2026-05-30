@@ -38,3 +38,6 @@ jobs:
 
       - name: Check examples/cross-platform/portable-skill-spec.json
         run: node -e "JSON.parse(require('fs').readFileSync('examples/cross-platform/portable-skill-spec.json', 'utf8')); console.log('portable-skill-spec.json OK')"
+
+      - name: Validate portable runtime contract
+        run: node scripts/validate-portable-spec.mjs examples/cross-platform/portable-skill-spec.json
