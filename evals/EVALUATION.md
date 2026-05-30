@@ -16,6 +16,8 @@ This evaluation loop follows the methodology from:
 - Run each case in two modes: `with_skill` (current skill) and `without_skill` (or prior snapshot).
 - Save outputs, timing, and grading per case.
 - Aggregate into `benchmark.json`.
+- Use `node scripts/grade-evals.mjs ...` to compute pass-rate, duration, token,
+  and determinism deltas against baseline (`with_skill` vs `without_skill`).
 - Perform human review and capture `feedback.json`.
 - Update skill guidance and rerun next iteration.
 

@@ -40,6 +40,37 @@
         "Response includes determinism and resume/replay guidance",
         "Response includes token/time optimization considerations"
       ]
+    },
+    {
+      "id": 4,
+      "name": "runtime-plugin-contract-project-scope",
+      "prompt": "Implement a real runtime/plugin path from the portable spec with project-local file-backed artifacts and no global/shared state.",
+      "expected_output": "Portable spec and runtime implementation enforce project-only scope, file-backed persistence, and strict shared-state rejection.",
+      "files": [
+        "examples/cross-platform/portable-skill-spec.json",
+        "examples/cross-platform/runtime-file-backed-plugin.mjs"
+      ],
+      "assertions": [
+        "Runtime contract enforces per-project scope only",
+        "Runtime contract declares file-backed persistence and rejects global/shared state",
+        "Implementation persists stage artifacts under project-local directory",
+        "Implementation blocks writes outside project root"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "runtime-plugin-replay-baseline-delta",
+      "prompt": "Compare baseline adapter behavior with the new file-backed runtime/plugin path and report quality, determinism, and replay/resume gains.",
+      "expected_output": "Evaluation artifacts include measurable baseline deltas for pass-rate, duration, and token usage plus replay/resume coverage.",
+      "files": [
+        "scripts/scaffold-evals.mjs",
+        "scripts/grade-evals.mjs"
+      ],
+      "assertions": [
+        "Evaluation benchmark reports pass-rate delta between with_skill and without_skill",
+        "Evaluation benchmark reports duration and token deltas between with_skill and without_skill",
+        "Grading includes replay/resume determinism validation"
+      ]
     }
   ]
 }

@@ -24,6 +24,12 @@ the review process.
    ```
 
 4. Keep pull requests focused -- one logical change per PR.
+5. If you change `examples/cross-platform/portable-skill-spec.json`, validate the
+   runtime contract:
+
+   ```bash
+   node scripts/validate-portable-spec.mjs examples/cross-platform/portable-skill-spec.json
+   ```
 
 ## Development setup
 

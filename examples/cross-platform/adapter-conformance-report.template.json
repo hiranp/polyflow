@@ -224,11 +224,65 @@
         "gemini": ""
       },
       "notes": ""
+    },
+    {
+      "id": "C13",
+      "title": "Memory contract persists and recalls compatible entries",
+      "critical": false,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C14",
+      "title": "Runtime writes are confined to project root artifacts only",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
+    },
+    {
+      "id": "C15",
+      "title": "Adapter rejects global/shared state dependencies",
+      "critical": true,
+      "status": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "evidence": {
+        "claude": "",
+        "codex": "",
+        "copilot": "",
+        "gemini": ""
+      },
+      "notes": ""
     }
   ],
   "summary": {
     "critical_passed": 0,
-    "critical_total": 0,
+    "critical_total": 10,
     "non_critical_failed": 0,
     "conformant": null
   },

@@ -270,6 +270,9 @@ first implementation file-based so the state is inspectable and replay-safe. If
 a semantic index is needed later, put it behind the same recall/persist contract
 instead of changing the workflow shape. The default artifact pair is
 `assets/templates/memory-entry.schema.json` plus `.planning/memory/index.jsonl`.
+For portable runtime/plugin adapters, keep artifacts strictly project-scoped
+(`./.polyflow/...`) and reject global/shared singleton memory so replay behavior
+remains deterministic across environments.
 
 For full signatures, every option, and every cap, **read
 `references/api-reference.md` now.** For ready-made orchestration shapes, **read

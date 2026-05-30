@@ -6,6 +6,7 @@ This folder adds portable, cross-runtime examples and additional use cases beyon
 
 - `cross-platform/`
   - Canonical portable orchestration spec.
+  - File-backed runtime/plugin reference implementation (`runtime-file-backed-plugin.mjs`).
   - One adapter-style example for Claude Code, Codex, Copilot, and Gemini.
 - `use-cases/`
   - Additional practical workflow use cases that can be implemented with this skill pattern.

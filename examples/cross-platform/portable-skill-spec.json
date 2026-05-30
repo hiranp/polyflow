@@ -2,6 +2,25 @@
   "name": "portable-review-and-verify",
   "version": "0.1.0",
   "description": "Review code changes across dimensions, then verify each finding.",
+  "runtimeContract": {
+    "stateScope": "project-only",
+    "sharedState": "forbidden",
+    "persistence": {
+      "mode": "file-backed",
+      "baseDir": ".polyflow/runs",
+      "artifactFormat": "json"
+    },
+    "pluginBoundary": {
+      "adapterInputs": ["target", "dimension", "finding", "projectRoot", "artifactsDir"],
+      "adapterOutputs": ["findings", "isReal", "reason"],
+      "forbiddenInputs": ["globalMemoryHandle", "sessionSingleton", "clockSeed"]
+    },
+    "determinism": {
+      "forbidTimeBasedBranching": true,
+      "forbidRandomBranching": true,
+      "resumeFromArtifactsOnly": true
+    }
+  },
   "inputs": {
     "target": "branch_or_diff",
     "dimensions": ["bugs", "security", "tests"]

@@ -51,6 +51,28 @@ function slugify(value) {
     .slice(0, 80) || 'eval'
 }
 
+function toNumberOrNull(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+function computeMean(values) {
+  if (!values.length) return null
+  return values.reduce((sum, value) => sum + value, 0) / values.length
+}
+
+function computeStddev(values) {
+  if (values.length < 2) return null
+  const mean = computeMean(values)
+  const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / values.length
+  return Math.sqrt(variance)
+}
+
+function computeGainPercent(withSkillValue, withoutSkillValue) {
+  if (withSkillValue === null || withoutSkillValue === null || withoutSkillValue === 0) return null
+  return ((withSkillValue - withoutSkillValue) / withoutSkillValue) * 100
+}
+
 function checkAssertion(assertionText, fileContent, filePath) {
   const code = fileContent || ''
   const isMd = filePath.endsWith('.md') || filePath.endsWith('.txt')
@@ -139,6 +161,48 @@ function checkAssertion(assertionText, fileContent, filePath) {
       }
       return { passed: false, evidence: "Missing token/time optimization considerations" }
 
+    case "Runtime contract enforces per-project scope only":
+      if (/stateScope"\s*:\s*"project-only"/.test(code) || /project-only/i.test(code)) {
+        return { passed: true, evidence: 'Found project-only runtime scope contract' }
+      }
+      return { passed: false, evidence: 'Missing explicit project-only state scope contract' }
+
+    case "Runtime contract declares file-backed persistence and rejects global/shared state":
+      if (/file-backed/i.test(code) && /(sharedState"\s*:\s*"forbidden"|rejects?\s+global|no\s+global)/i.test(code)) {
+        return { passed: true, evidence: 'Found file-backed persistence and shared-state rejection' }
+      }
+      return { passed: false, evidence: 'Missing file-backed persistence and/or explicit global shared-state rejection' }
+
+    case "Implementation persists stage artifacts under project-local directory":
+      if (/(?:\.polyflow\/runs|artifactsRoot|writeJSON)/.test(code) && /projectRoot/.test(code)) {
+        return { passed: true, evidence: 'Found project-root artifact persistence logic' }
+      }
+      return { passed: false, evidence: 'Could not verify project-local artifact persistence logic' }
+
+    case "Implementation blocks writes outside project root":
+      if (/Path escapes project root|startsWith\('\.\.'\)|ensureWithinProject/.test(code)) {
+        return { passed: true, evidence: 'Found project-root path escape checks' }
+      }
+      return { passed: false, evidence: 'No explicit project-root boundary check found' }
+
+    case "Evaluation benchmark reports pass-rate delta between with_skill and without_skill":
+      if (/delta[\s\S]*pass_rate/.test(code) && /with_skill/.test(code) && /without_skill/.test(code)) {
+        return { passed: true, evidence: 'Found benchmark delta pass-rate reporting structure' }
+      }
+      return { passed: false, evidence: 'Missing pass-rate delta reporting in benchmark structure' }
+
+    case "Evaluation benchmark reports duration and token deltas between with_skill and without_skill":
+      if (/delta[\s\S]*time_seconds/.test(code) && /delta[\s\S]*tokens/.test(code)) {
+        return { passed: true, evidence: 'Found duration and token delta reporting in benchmark structure' }
+      }
+      return { passed: false, evidence: 'Missing duration/token delta reporting in benchmark structure' }
+
+    case "Grading includes replay/resume determinism validation":
+      if (/(?:determinism|deterministic)/i.test(code) && /(?:resume|replay)/i.test(code)) {
+        return { passed: true, evidence: 'Found replay/resume determinism grading checks' }
+      }
+      return { passed: false, evidence: 'Missing replay/resume determinism grading checks' }
+
     default:
       if (code.toLowerCase().includes(assertionText.toLowerCase())) {
         return { passed: true, evidence: `Matched substring: "${assertionText}"` }
@@ -160,12 +224,19 @@ if (!existsSync(iterationDir)) {
 
 console.log(`Grading iteration-${args.iteration} in workspace ${args.workspaceDir}...`)
 
-let totalPassedCount = 0
-let totalAssertionCount = 0
-
 const runSummary = {
-  with_skill: { pass_rate: 0, count: 0, total_assertions: 0 },
-  without_skill: { pass_rate: 0, count: 0, total_assertions: 0 }
+  with_skill: {
+    pass_rates: [],
+    time_seconds: [],
+    tokens: [],
+    determinism_pass_rates: [],
+  },
+  without_skill: {
+    pass_rates: [],
+    time_seconds: [],
+    tokens: [],
+    determinism_pass_rates: [],
+  },
 }
 
 for (const testCase of evals) {
@@ -182,24 +253,35 @@ for (const testCase of evals) {
     const modeDir = path.join(evalDir, mode)
     const outputsDir = path.join(modeDir, 'outputs')
     const gradingPath = path.join(modeDir, 'grading.json')
+    const timingPath = path.join(modeDir, 'timing.json')
 
     if (!existsSync(outputsDir) || !existsSync(gradingPath)) {
       continue
     }
 
-    // Find first available output file
+    // Read all available output files to maximize assertion coverage.
     let outputFiles = []
     try {
       outputFiles = readdirSync(outputsDir).filter(f => !f.startsWith('.'))
-    } catch (err) {
-      // Ignore
+    } catch {
+      // Ignore unreadable output directories; missing artifacts are handled below.
     }
 
     let fileContent = ''
-    let filePath = ''
+    let firstOutputPath = ''
     if (outputFiles.length > 0) {
-      filePath = path.join(outputsDir, outputFiles[0])
-      fileContent = readFileSync(filePath, 'utf8')
+      const sorted = outputFiles.sort()
+      firstOutputPath = path.join(outputsDir, sorted[0])
+      // Cap aggregate reads to keep grading bounded on large output directories.
+      const maxBytes = 1_000_000
+      let usedBytes = 0
+      for (const name of sorted) {
+        const content = readFileSync(path.join(outputsDir, name), 'utf8')
+        const nextBytes = Buffer.byteLength(content, 'utf8')
+        if (usedBytes + nextBytes > maxBytes) break
+        fileContent += (fileContent ? '\n\n' : '') + content
+        usedBytes += nextBytes
+      }
     }
 
     const gradingData = JSON.parse(readFileSync(gradingPath, 'utf8'))
@@ -207,14 +289,14 @@ for (const testCase of evals) {
 
     let passedCount = 0
     const updatedAssertions = assertions.map(assertion => {
-      if (!filePath) {
+      if (!firstOutputPath) {
         return {
           ...assertion,
           passed: false,
           evidence: 'No output file found in outputs/ directory'
         }
       }
-      const res = checkAssertion(assertion.text, fileContent, filePath)
+      const res = checkAssertion(assertion.text, fileContent, firstOutputPath)
       if (res.passed) passedCount++
       return {
         ...assertion,
@@ -225,53 +307,86 @@ for (const testCase of evals) {
 
     const total = assertions.length
     const passRate = total > 0 ? passedCount / total : 0
+    const determinismRelatedAssertions = updatedAssertions.filter(a => /\b(determinism|deterministic|resume|replay)\b/i.test(a.text))
+    const determinismPassed = determinismRelatedAssertions.filter(a => a.passed).length
+    const determinismPassRate = determinismRelatedAssertions.length > 0 ? determinismPassed / determinismRelatedAssertions.length : null
 
     gradingData.assertion_results = updatedAssertions
     gradingData.summary = {
       passed: passedCount,
       failed: total - passedCount,
       total,
-      pass_rate: passRate
+      pass_rate: passRate,
+      determinism_pass_rate: determinismPassRate,
     }
     gradingData.grading_status = 'completed'
 
     writeFileSync(gradingPath, JSON.stringify(gradingData, null, 2) + '\n', 'utf8')
     console.log(`  [${mode}] ${evalSlug}: ${passedCount}/${total} passed (${Math.round(passRate * 100)}%)`)
 
-    runSummary[mode].pass_rate += passRate
-    runSummary[mode].count++
-    runSummary[mode].total_assertions += total
+    runSummary[mode].pass_rates.push(passRate)
+    if (determinismPassRate !== null) runSummary[mode].determinism_pass_rates.push(determinismPassRate)
+
+    if (existsSync(timingPath)) {
+      const timing = JSON.parse(readFileSync(timingPath, 'utf8'))
+      const durationMs = toNumberOrNull(timing?.duration_ms)
+      const totalTokens = toNumberOrNull(timing?.total_tokens)
+      if (durationMs !== null) runSummary[mode].time_seconds.push(durationMs / 1000)
+      if (totalTokens !== null) runSummary[mode].tokens.push(totalTokens)
+    }
   }
 }
 
-// Calculate mean pass rates and update benchmark.json
+// Calculate means/stddev and update benchmark.json
 const benchmarkPath = path.join(iterationDir, 'benchmark.json')
 if (existsSync(benchmarkPath)) {
   const benchmarkData = JSON.parse(readFileSync(benchmarkPath, 'utf8'))
 
-  const withSkillMean = runSummary.with_skill.count > 0 ? runSummary.with_skill.pass_rate / runSummary.with_skill.count : null
-  const withoutSkillMean = runSummary.without_skill.count > 0 ? runSummary.without_skill.pass_rate / runSummary.without_skill.count : null
+  const withSkillPassMean = computeMean(runSummary.with_skill.pass_rates)
+  const withoutSkillPassMean = computeMean(runSummary.without_skill.pass_rates)
+  const withSkillTimeMean = computeMean(runSummary.with_skill.time_seconds)
+  const withoutSkillTimeMean = computeMean(runSummary.without_skill.time_seconds)
+  const withSkillTokensMean = computeMean(runSummary.with_skill.tokens)
+  const withoutSkillTokensMean = computeMean(runSummary.without_skill.tokens)
+  const withSkillDeterminismMean = computeMean(runSummary.with_skill.determinism_pass_rates)
+  const withoutSkillDeterminismMean = computeMean(runSummary.without_skill.determinism_pass_rates)
+
+  const deltaPass = (withSkillPassMean !== null && withoutSkillPassMean !== null) ? withSkillPassMean - withoutSkillPassMean : null
+  const deltaTime = (withSkillTimeMean !== null && withoutSkillTimeMean !== null) ? withSkillTimeMean - withoutSkillTimeMean : null
+  const deltaTokens = (withSkillTokensMean !== null && withoutSkillTokensMean !== null) ? withSkillTokensMean - withoutSkillTokensMean : null
+  const deltaDeterminism = (withSkillDeterminismMean !== null && withoutSkillDeterminismMean !== null) ? withSkillDeterminismMean - withoutSkillDeterminismMean : null
 
   benchmarkData.run_summary = {
     with_skill: {
-      pass_rate: { mean: withSkillMean, stddev: 0 },
-      time_seconds: { mean: null, stddev: null },
-      tokens: { mean: null, stddev: null }
+      pass_rate: { mean: withSkillPassMean, stddev: computeStddev(runSummary.with_skill.pass_rates) },
+      time_seconds: { mean: withSkillTimeMean, stddev: computeStddev(runSummary.with_skill.time_seconds) },
+      tokens: { mean: withSkillTokensMean, stddev: computeStddev(runSummary.with_skill.tokens) },
+      determinism_pass_rate: { mean: withSkillDeterminismMean, stddev: computeStddev(runSummary.with_skill.determinism_pass_rates) },
     },
     without_skill: {
-      pass_rate: { mean: withoutSkillMean, stddev: 0 },
-      time_seconds: { mean: null, stddev: null },
-      tokens: { mean: null, stddev: null }
+      pass_rate: { mean: withoutSkillPassMean, stddev: computeStddev(runSummary.without_skill.pass_rates) },
+      time_seconds: { mean: withoutSkillTimeMean, stddev: computeStddev(runSummary.without_skill.time_seconds) },
+      tokens: { mean: withoutSkillTokensMean, stddev: computeStddev(runSummary.without_skill.tokens) },
+      determinism_pass_rate: { mean: withoutSkillDeterminismMean, stddev: computeStddev(runSummary.without_skill.determinism_pass_rates) },
     },
     delta: {
-      pass_rate: (withSkillMean !== null && withoutSkillMean !== null) ? withSkillMean - withoutSkillMean : null,
-      time_seconds: null,
-      tokens: null
-    }
+      pass_rate: deltaPass,
+      time_seconds: deltaTime,
+      tokens: deltaTokens,
+      determinism_pass_rate: deltaDeterminism,
+    },
+    gain: {
+      quality_percent: computeGainPercent(withSkillPassMean, withoutSkillPassMean),
+      time_percent: (withSkillTimeMean !== null && withoutSkillTimeMean !== null) ? computeGainPercent(withoutSkillTimeMean, withSkillTimeMean) : null,
+      tokens_percent: (withSkillTokensMean !== null && withoutSkillTokensMean !== null) ? computeGainPercent(withoutSkillTokensMean, withSkillTokensMean) : null,
+    },
   }
 
   writeFileSync(benchmarkPath, JSON.stringify(benchmarkData, null, 2) + '\n', 'utf8')
   console.log(`\nBenchmark updated:`)
-  console.log(`  with_skill pass rate mean: ${withSkillMean !== null ? Math.round(withSkillMean * 100) + '%' : 'N/A'}`)
-  console.log(`  without_skill pass rate mean: ${withoutSkillMean !== null ? Math.round(withoutSkillMean * 100) + '%' : 'N/A'}`)
+  console.log(`  with_skill pass rate mean: ${withSkillPassMean !== null ? Math.round(withSkillPassMean * 100) + '%' : 'N/A'}`)
+  console.log(`  without_skill pass rate mean: ${withoutSkillPassMean !== null ? Math.round(withoutSkillPassMean * 100) + '%' : 'N/A'}`)
+  console.log(`  delta pass rate: ${deltaPass !== null ? Math.round(deltaPass * 100) + ' pts' : 'N/A'}`)
+  console.log(`  delta time (s): ${deltaTime !== null ? deltaTime.toFixed(3) : 'N/A'}`)
+  console.log(`  delta tokens: ${deltaTokens !== null ? Math.round(deltaTokens) : 'N/A'}`)
 }

@@ -23,6 +23,8 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
 - Model-policy parity: Semantic model classes map correctly to platform-specific models.
 - Artifact parity: Intermediate and final outputs are persisted for replay/audit.
 - Memory-contract parity: Recall reads from the stable memory store and persistence writes compatible entries back.
+- Project-scope parity: Runtime writes only inside project-local artifact roots.
+- Shared-state parity: Adapter rejects global/singleton/shared-memory state.
 
 ## Checklist matrix
 
@@ -156,6 +158,26 @@ Use this checklist to verify that adapter outputs from Claude Code, Codex, Copil
   - OpenCode: [ ] PASS [ ] FAIL
   - Evidence:
 
+- C14 Runtime writes are confined to project root artifacts only
+  - Claude: [ ] PASS [ ] FAIL
+  - Codex: [ ] PASS [ ] FAIL
+  - Copilot: [ ] PASS [ ] FAIL
+  - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
+  - Evidence:
+
+- C15 Adapter rejects global/shared state dependencies
+  - Claude: [ ] PASS [ ] FAIL
+  - Codex: [ ] PASS [ ] FAIL
+  - Copilot: [ ] PASS [ ] FAIL
+  - Gemini: [ ] PASS [ ] FAIL
+  - Kilo: [ ] PASS [ ] FAIL
+  - Gumloop: [ ] PASS [ ] FAIL
+  - OpenCode: [ ] PASS [ ] FAIL
+  - Evidence:
+
 ## PASS/FAIL guidance
 
 - PASS: Requirement is fully met with concrete artifact evidence.
@@ -175,5 +197,6 @@ Adapter is conformant when:
 
 - All critical checks pass: C01-C08 and C10.
 - For workflows that use cross-run memory, C13 also passes.
+- For project-scoped runtimes, C14 and C15 also pass.
 - No more than one non-critical check fails.
 - Every failed check has a documented remediation owner and ETA.
